@@ -25,7 +25,6 @@ namespace TelegramBot
             while (isRunning)
             {
                 Console.Write("Введите команду: ");
-
                 string input = Console.ReadLine().Trim();
 
                 if (input == "/start")
@@ -114,7 +113,7 @@ namespace TelegramBot
 
             string echoText = fullCommand.Substring(6);
 
-            if (string.IsNullOrEmpty(echoText))
+            if (string.IsNullOrWhiteSpace(echoText))
             {
                 Console.WriteLine($"{userName}, вы не ввели текст для повтора. Используйте: /echo [текст]");
             }
@@ -146,7 +145,6 @@ namespace TelegramBot
             Console.WriteLine($"Всего задач: {tasks.Count}");
         }
 
-        
         static bool ProcessShowTasksCommand()
         {
             if (string.IsNullOrEmpty(userName))
@@ -167,7 +165,7 @@ namespace TelegramBot
                 Console.WriteLine($"{i + 1}. {tasks[i]}");
             }
 
-            return true; 
+            return true;
         }
 
         static void ProcessRemoveTaskCommand()
