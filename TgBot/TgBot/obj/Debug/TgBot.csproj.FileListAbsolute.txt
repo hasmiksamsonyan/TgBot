@@ -1,0 +1,7 @@
+C:\Users\a.samsonyan\source\repos\TgBot\TgBot\bin\Debug\TgBot.exe.config
+C:\Users\a.samsonyan\source\repos\TgBot\TgBot\bin\Debug\TgBot.exe
+C:\Users\a.samsonyan\source\repos\TgBot\TgBot\bin\Debug\TgBot.pdb
+C:\Users\a.samsonyan\source\repos\TgBot\TgBot\obj\Debug\TgBot.csproj.AssemblyReference.cache
+C:\Users\a.samsonyan\source\repos\TgBot\TgBot\obj\Debug\TgBot.csproj.CoreCompileInputs.cache
+C:\Users\a.samsonyan\source\repos\TgBot\TgBot\obj\Debug\TgBot.exe
+C:\Users\a.samsonyan\source\repos\TgBot\TgBot\obj\Debug\TgBot.pdb
