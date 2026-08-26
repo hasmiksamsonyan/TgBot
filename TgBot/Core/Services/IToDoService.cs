@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
+using TgBot.Core.Entities;
 
-namespace TelegramBot
+namespace TgBot.Core.Services
 {
     public interface IToDoService
     {
@@ -10,5 +11,6 @@ namespace TelegramBot
         ToDoItem Add(ToDoUser user, string name);
         void MarkCompleted(Guid id);
         void Delete(Guid id);
+        IReadOnlyList<ToDoItem> Find(ToDoUser user, string namePrefix);
     }
 }

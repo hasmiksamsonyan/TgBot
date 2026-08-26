@@ -1,13 +1,7 @@
 using System;
 
-namespace TelegramBot
+namespace TgBot.Core.Entities
 {
-    public enum ToDoItemState
-    {
-        Active,
-        Completed
-    }
-
     public class ToDoItem
     {
         public Guid Id { get; }

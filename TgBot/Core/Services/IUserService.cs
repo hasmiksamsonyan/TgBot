@@ -1,4 +1,6 @@
-namespace TelegramBot
+using TgBot.Core.Entities;
+
+namespace TgBot.Core.Services
 {
     public interface IUserService
     {
