@@ -14,14 +14,13 @@ namespace TgBot.Core.Services
             _todoRepository = todoRepository;
         }
 
-        public (int total, int completed, int active, DateTime generatedAt) GetUserStats(Guid userId)
+        public async Task<(int total, int completed, int active, DateTime generatedAt)> GetUserStats(Guid userId, CancellationToken ct)
         {
-            var allTasks = _todoRepository.GetAllByUserId(userId);
+            var allTasks = await _todoRepository.GetAllByUserId(userId, ct);
             var total = allTasks.Count;
             var completed = allTasks.Count(t => t.State == ToDoItemState.Completed);
             var active = allTasks.Count(t => t.State == ToDoItemState.Active);
 
-          
             return (total, completed, active, DateTime.Now);
         }
     }

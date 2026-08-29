@@ -12,20 +12,20 @@ namespace TgBot.Core.Services
             _userRepository = userRepository;
         }
 
-        public ToDoUser RegisterUser(long telegramUserId, string telegramUserName)
+        public async Task<ToDoUser> RegisterUser(long telegramUserId, string telegramUserName, CancellationToken ct)
         {
-            var existing = _userRepository.GetUserByTelegramUserId(telegramUserId);
+            var existing = await _userRepository.GetUserByTelegramUserId(telegramUserId, ct);
             if (existing != null)
                 throw new InvalidOperationException("Пользователь уже зарегистрирован");
 
             var user = new ToDoUser(telegramUserId, telegramUserName);
-            _userRepository.Add(user);
+            await _userRepository.Add(user, ct);
             return user;
         }
 
-        public ToDoUser? GetUser(long telegramUserId)
+        public async Task<ToDoUser?> GetUser(long telegramUserId, CancellationToken ct)
         {
-            return _userRepository.GetUserByTelegramUserId(telegramUserId);
+            return await _userRepository.GetUserByTelegramUserId(telegramUserId, ct);
         }
     }
 }
