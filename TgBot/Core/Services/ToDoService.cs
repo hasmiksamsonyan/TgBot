@@ -10,6 +10,7 @@ namespace TgBot.Core.Services
     public class ToDoService : IToDoService
     {
         private readonly IToDoRepository _todoRepository;
+
         private const int MaxTaskCount = 100;
         private const int MaxTaskLength = 200;
 
@@ -18,57 +19,94 @@ namespace TgBot.Core.Services
             _todoRepository = todoRepository;
         }
 
-        public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken ct)
+        public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(
+            Guid userId,
+            CancellationToken ct)
         {
             return await _todoRepository.GetAllByUserId(userId, ct);
         }
 
-        public async Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken ct)
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(
+            Guid userId,
+            CancellationToken ct)
         {
             return await _todoRepository.GetActiveByUserId(userId, ct);
         }
 
-        public async Task<ToDoItem> Add(ToDoUser user, string name, CancellationToken ct)
+        public async Task<ToDoItem> Add(
+            ToDoUser user,
+            string name,
+            DateTime deadline,
+            CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Название задачи не может быть пустым");
 
             if (name.Length > MaxTaskLength)
-                throw new TaskLengthLimitException(name.Length, MaxTaskLength);
+                throw new TaskLengthLimitException(
+                    name.Length,
+                    MaxTaskLength);
 
-            if (await _todoRepository.ExistsByName(user.UserId, name, ct))
+            if (await _todoRepository.ExistsByName(
+                user.UserId,
+                name,
+                ct))
+            {
                 throw new DuplicateTaskException(name);
+            }
 
-            if (await _todoRepository.CountActive(user.UserId, ct) >= MaxTaskCount)
+            if (await _todoRepository.CountActive(
+                user.UserId,
+                ct) >= MaxTaskCount)
+            {
                 throw new TaskCountLimitException(MaxTaskCount);
+            }
 
-            var task = new ToDoItem(user, name);
+            var task = new ToDoItem(
+                user,
+                name,
+                deadline);
+
             await _todoRepository.Add(task, ct);
+
             return task;
         }
 
-        public async Task MarkCompleted(Guid id, CancellationToken ct)
+        public async Task MarkCompleted(
+            Guid id,
+            CancellationToken ct)
         {
             var task = await _todoRepository.Get(id, ct);
+
             if (task == null)
                 throw new ArgumentException("Задача не найдена");
 
             task.Complete();
+
             await _todoRepository.Update(task, ct);
         }
 
-        public async Task Delete(Guid id, CancellationToken ct)
+        public async Task Delete(
+            Guid id,
+            CancellationToken ct)
         {
             await _todoRepository.Delete(id, ct);
         }
 
-        public async Task<IReadOnlyList<ToDoItem>> Find(ToDoUser user, string namePrefix, CancellationToken ct)
+        public async Task<IReadOnlyList<ToDoItem>> Find(
+            ToDoUser user,
+            string namePrefix,
+            CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(namePrefix))
                 return new List<ToDoItem>().AsReadOnly();
 
-            return await _todoRepository.Find(user.UserId, task =>
-                task.Name.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase), ct);
+            return await _todoRepository.Find(
+                user.UserId,
+                task => task.Name.StartsWith(
+                    namePrefix,
+                    StringComparison.OrdinalIgnoreCase),
+                ct);
         }
     }
 }

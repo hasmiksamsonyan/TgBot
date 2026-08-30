@@ -8,15 +8,17 @@ namespace TgBot.Core.Entities
         public ToDoUser User { get; }
         public string Name { get; }
         public DateTime CreatedAt { get; }
+        public DateTime Deadline { get; }
         public ToDoItemState State { get; private set; }
         public DateTime? StateChangedAt { get; private set; }
 
-        public ToDoItem(ToDoUser user, string name)
+        public ToDoItem(ToDoUser user, string name, DateTime deadline)
         {
             Id = Guid.NewGuid();
             User = user;
             Name = name;
             CreatedAt = DateTime.UtcNow;
+            Deadline = deadline;
             State = ToDoItemState.Active;
             StateChangedAt = null;
         }

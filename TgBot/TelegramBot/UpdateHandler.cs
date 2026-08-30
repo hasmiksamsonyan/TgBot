@@ -3,6 +3,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TgBot.Core.Entities;
 using TgBot.Core.Services;
+using TgBot.Scenarios;
 
 namespace TgBot
 {
@@ -11,15 +12,21 @@ namespace TgBot
         private readonly IUserService _userService;
         private readonly IToDoService _todoService;
         private readonly IToDoReportService _reportService;
+        private readonly IEnumerable<IScenario> _scenarios;
+        private readonly IScenarioContextRepository _contextRepository;
 
         public UpdateHandler(
             IUserService userService,
             IToDoService todoService,
-            IToDoReportService reportService)
+            IToDoReportService reportService,
+            IEnumerable<IScenario> scenarios,
+            IScenarioContextRepository contextRepository)
         {
             _userService = userService;
             _todoService = todoService;
             _reportService = reportService;
+            _scenarios = scenarios;
+            _contextRepository = contextRepository;
         }
 
         public async Task HandleUpdateAsync(
@@ -41,7 +48,6 @@ namespace TgBot
                 // Пользователь ещё не зарегистрирован
                 if (user == null)
                 {
-                    // До регистрации доступна только кнопка /start
                     if (text != "/start")
                     {
                         await botClient.SendMessage(
@@ -53,18 +59,47 @@ namespace TgBot
                         return;
                     }
 
-                    // Регистрация по команде /start
                     user = await _userService.RegisterUser(
                         tgUser.Id,
                         tgUser.Username ?? "User",
                         ct);
 
-                    // После регистрации показываем основную клавиатуру
                     await botClient.SendMessage(
                         chat.Id,
                         $"Добро пожаловать, {user.TelegramUserName}!",
                         replyMarkup: GetMainKeyboard(),
                         cancellationToken: ct);
+
+                    return;
+                }
+
+                // Проверяем, есть ли активный сценарий
+                var context = await _contextRepository.GetContext(
+                    tgUser.Id,
+                    ct);
+
+                if (context != null)
+                {
+                    if (text == "/cancel")
+                    {
+                        await _contextRepository.ResetContext(
+                            tgUser.Id,
+                            ct);
+
+                        await botClient.SendMessage(
+                            chat.Id,
+                            "Сценарий отменён.",
+                            replyMarkup: GetMainKeyboard(),
+                            cancellationToken: ct);
+
+                        return;
+                    }
+
+                    await ProcessScenario(
+                        botClient,
+                        context,
+                        update.Message,
+                        ct);
 
                     return;
                 }
@@ -81,8 +116,28 @@ namespace TgBot
                     await ShowReport(botClient, chat, user, ct);
                 else if (text.StartsWith("/find"))
                     await FindTasks(botClient, chat, user, text, ct);
-                else if (text.StartsWith("/addtask"))
-                    await AddTask(botClient, chat, user, text, ct);
+                else if (text == "/addtask")
+                {
+                    var scenarioContext =
+                        new ScenarioContext(ScenarioType.AddTask);
+
+                    await _contextRepository.SetContext(
+                        tgUser.Id,
+                        scenarioContext,
+                        ct);
+
+                    await botClient.SendMessage(
+                        chat.Id,
+                        "Добавление задачи",
+                        replyMarkup: GetCancelKeyboard(),
+                        cancellationToken: ct);
+
+                    await ProcessScenario(
+                        botClient,
+                        scenarioContext,
+                        update.Message,
+                        ct);
+                }
                 else if (text.StartsWith("/completetask "))
                     await CompleteTask(botClient, chat, text, ct);
                 else if (text.StartsWith("/removetask "))
@@ -110,6 +165,56 @@ namespace TgBot
             }
         }
 
+        public IScenario GetScenario(ScenarioType scenario)
+        {
+            var result = _scenarios.FirstOrDefault(
+                s => s.CanHandle(scenario));
+
+            if (result == null)
+            {
+                throw new InvalidOperationException(
+                    $"Сценарий {scenario} не найден.");
+            }
+
+            return result;
+        }
+
+        public async Task ProcessScenario(
+            ITelegramBotClient botClient,
+            ScenarioContext context,
+            Message msg,
+            CancellationToken ct)
+        {
+            var scenario = GetScenario(
+                context.CurrentScenario);
+
+            var result = await scenario.HandleMessageAsync(
+                botClient,
+                context,
+                msg,
+                ct);
+
+            if (result == ScenarioResult.Completed)
+            {
+                await _contextRepository.ResetContext(
+                    msg.From!.Id,
+                    ct);
+
+                await botClient.SendMessage(
+                    msg.Chat.Id,
+                    "Готово!",
+                    replyMarkup: GetMainKeyboard(),
+                    cancellationToken: ct);
+            }
+            else
+            {
+                await _contextRepository.SetContext(
+                    msg.From!.Id,
+                    context,
+                    ct);
+            }
+        }
+
         public Task HandleErrorAsync(
             ITelegramBotClient botClient,
             Exception exception,
@@ -131,20 +236,33 @@ namespace TgBot
             };
         }
 
+        private ReplyKeyboardMarkup GetCancelKeyboard()
+        {
+            return new ReplyKeyboardMarkup(
+                new[]
+                {
+            new KeyboardButton("/cancel")
+                })
+            {
+                ResizeKeyboard = true
+            };
+        }
+
         private ReplyKeyboardMarkup GetMainKeyboard()
         {
             return new ReplyKeyboardMarkup(
                 new[]
                 {
-                    new KeyboardButton[]
-                    {
-                        new KeyboardButton("/showtasks"),
-                        new KeyboardButton("/showalltasks")
-                    },
-                    new KeyboardButton[]
-                    {
-                        new KeyboardButton("/report")
-                    }
+            new KeyboardButton[]
+            {
+                new KeyboardButton("/addtask"),
+                new KeyboardButton("/showtasks")
+            },
+            new KeyboardButton[]
+            {
+                new KeyboardButton("/showalltasks"),
+                new KeyboardButton("/report")
+            }
                 })
             {
                 ResizeKeyboard = true
@@ -162,7 +280,8 @@ namespace TgBot
                 "/info - информация\n" +
                 "/report - статистика по задачам\n" +
                 "/find [текст] - найти задачи по префиксу\n" +
-                "/addtask [название] - добавить задачу\n" +
+                "/addtask - добавить задачу\n" +
+                "/cancel - отменить текущий сценарий\n" +
                 "/showtasks - активные задачи\n" +
                 "/showalltasks - все задачи\n" +
                 "/completetask [id] - выполнить задачу\n" +
@@ -177,8 +296,13 @@ namespace TgBot
             ToDoUser user,
             CancellationToken ct)
         {
-            var all = await _todoService.GetAllByUserId(user.UserId, ct);
-            var active = await _todoService.GetActiveByUserId(user.UserId, ct);
+            var all = await _todoService.GetAllByUserId(
+                user.UserId,
+                ct);
+
+            var active = await _todoService.GetActiveByUserId(
+                user.UserId,
+                ct);
 
             await bot.SendMessage(
                 chat.Id,
@@ -195,7 +319,9 @@ namespace TgBot
             ToDoUser user,
             CancellationToken ct)
         {
-            var tasks = await _todoService.GetActiveByUserId(user.UserId, ct);
+            var tasks = await _todoService.GetActiveByUserId(
+                user.UserId,
+                ct);
 
             if (tasks.Count == 0)
             {
@@ -228,7 +354,9 @@ namespace TgBot
             ToDoUser user,
             CancellationToken ct)
         {
-            var tasks = await _todoService.GetAllByUserId(user.UserId, ct);
+            var tasks = await _todoService.GetAllByUserId(
+                user.UserId,
+                ct);
 
             if (tasks.Count == 0)
             {
@@ -265,7 +393,9 @@ namespace TgBot
             ToDoUser user,
             CancellationToken ct)
         {
-            var stats = await _reportService.GetUserStats(user.UserId, ct);
+            var stats = await _reportService.GetUserStats(
+                user.UserId,
+                ct);
 
             await bot.SendMessage(
                 chat.Id,
@@ -283,7 +413,9 @@ namespace TgBot
             string command,
             CancellationToken ct)
         {
-            string prefix = command.Substring("/find".Length).Trim();
+            string prefix = command
+                .Substring("/find".Length)
+                .Trim();
 
             if (string.IsNullOrWhiteSpace(prefix))
             {
@@ -295,7 +427,10 @@ namespace TgBot
                 return;
             }
 
-            var tasks = await _todoService.Find(user, prefix, ct);
+            var tasks = await _todoService.Find(
+                user,
+                prefix,
+                ct);
 
             if (tasks.Count == 0)
             {
@@ -307,7 +442,8 @@ namespace TgBot
                 return;
             }
 
-            string msg = $"Найдено задач, начинающихся на '{prefix}':\n";
+            string msg =
+                $"Найдено задач, начинающихся на '{prefix}':\n";
 
             for (int i = 0; i < tasks.Count; i++)
             {
@@ -326,42 +462,7 @@ namespace TgBot
                 cancellationToken: ct);
         }
 
-        private async Task AddTask(
-            ITelegramBotClient bot,
-            Chat chat,
-            ToDoUser user,
-            string command,
-            CancellationToken ct)
-        {
-            string name = command.Substring("/addtask".Length).Trim();
-
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                await bot.SendMessage(
-                    chat.Id,
-                    "Укажите название: /addtask Купить продукты",
-                    cancellationToken: ct);
-
-                return;
-            }
-
-            try
-            {
-                var task = await _todoService.Add(user, name, ct);
-
-                await bot.SendMessage(
-                    chat.Id,
-                    $"Задача '{name}' добавлена. ID: `{task.Id}`",
-                    cancellationToken: ct);
-            }
-            catch (Exception ex)
-            {
-                await bot.SendMessage(
-                    chat.Id,
-                    $"Ошибка: {ex.Message}",
-                    cancellationToken: ct);
-            }
-        }
+        
 
         private async Task CompleteTask(
             ITelegramBotClient bot,
@@ -369,7 +470,9 @@ namespace TgBot
             string command,
             CancellationToken ct)
         {
-            string idStr = command.Substring("/completetask".Length).Trim();
+            string idStr = command
+                .Substring("/completetask".Length)
+                .Trim();
 
             if (!Guid.TryParse(idStr, out Guid id))
             {
@@ -406,9 +509,12 @@ namespace TgBot
             string command,
             CancellationToken ct)
         {
-            string numStr = command.Substring("/removetask".Length).Trim();
+            string numStr = command
+                .Substring("/removetask".Length)
+                .Trim();
 
-            if (!int.TryParse(numStr, out int number) || number < 1)
+            if (!int.TryParse(numStr, out int number) ||
+                number < 1)
             {
                 await bot.SendMessage(
                     chat.Id,
@@ -420,7 +526,9 @@ namespace TgBot
 
             try
             {
-                var tasks = await _todoService.GetAllByUserId(user.UserId, ct);
+                var tasks = await _todoService.GetAllByUserId(
+                    user.UserId,
+                    ct);
 
                 if (number > tasks.Count)
                 {
@@ -434,7 +542,9 @@ namespace TgBot
 
                 var task = tasks[number - 1];
 
-                await _todoService.Delete(task.Id, ct);
+                await _todoService.Delete(
+                    task.Id,
+                    ct);
 
                 await bot.SendMessage(
                     chat.Id,

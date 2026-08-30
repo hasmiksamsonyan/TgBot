@@ -5,6 +5,7 @@ using Telegram.Bot.Types.Enums;
 using TgBot.Core.DataAccess;
 using TgBot.Core.Services;
 using TgBot.Infrastructure.DataAccess;
+using TgBot.Scenarios;
 
 namespace TgBot
 {
@@ -20,10 +21,18 @@ namespace TgBot
             var todoService = new ToDoService(todoRepository);
             var reportService = new ToDoReportService(todoRepository);
 
+            var contextRepository = new InMemoryScenarioContextRepository();
+
+            var scenarios = new IScenario[]
+            {
+    new AddTaskScenario(userService, todoService)
+            };
             var handler = new UpdateHandler(
                 userService,
                 todoService,
-                reportService);
+                reportService,
+                scenarios,
+                contextRepository);
 
             var botClient = new TelegramBotClient("ТОКЕН");
 
