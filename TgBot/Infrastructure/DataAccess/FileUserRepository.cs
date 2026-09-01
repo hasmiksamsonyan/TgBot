@@ -13,7 +13,10 @@ namespace TgBot.Infrastructure.DataAccess
         public FileUserRepository(string basePath)
         {
             _basePath = basePath;
-            Directory.CreateDirectory(_basePath);
+            if (!Directory.Exists(_basePath))
+{
+    Directory.CreateDirectory(_basePath);
+}
         }
 
         public async Task Add(ToDoUser user, CancellationToken ct)
