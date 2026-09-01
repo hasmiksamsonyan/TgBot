@@ -20,7 +20,10 @@ namespace TgBot.Infrastructure.DataAccess
             _baseFolder = baseFolder;
             _indexFile = Path.Combine(_baseFolder, "index.json");
 
-            Directory.CreateDirectory(_baseFolder);
+            if (!Directory.Exists(_baseFolder))
+            {
+                Directory.CreateDirectory(_baseFolder);
+            }
         }
 
         public async Task Add(ToDoItem item, CancellationToken ct)
