@@ -1,77 +1,90 @@
-﻿using System;
-using Otus.ToDoList.ConsoleBot.Types;
+﻿using Otus.ToDoList.ConsoleBot.Types;
 
-namespace Otus.ToDoList.ConsoleBot
+namespace Otus.ToDoList.ConsoleBot;
+public class ConsoleBotClient : ITelegramBotClient
 {
-    public class ConsoleBotClient : ITelegramBotClient
+    private readonly Chat _chat;
+    private readonly User _user;
+
+    public ConsoleBotClient()
     {
-        private readonly Chat _chat;
-        private readonly User _user;
+        _chat = new Chat { Id = Random.Shared.Next() };
+        _user = new User { Id = Random.Shared.Next(), Username = $"ConsoleUser_{Guid.NewGuid()}" };
+    }
 
-        public ConsoleBotClient()
+    public async Task SendMessage(Chat chat, string text, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(chat, nameof(chat));
+        ArgumentNullException.ThrowIfNull(text, nameof(text));
+        if (_chat.Id != chat.Id)
+            throw new ArgumentException($"Invalid chat.Id. Support {_chat.Id}, but was {chat.Id}");
+
+        await WriteLineColorAsync($"Бот: {text}", ConsoleColor.Blue, ct);
+    }
+
+    public void StartReceiving(IUpdateHandler handler, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(handler, nameof(handler));
+
+        try
         {
-            _chat = new Chat { Id = Random.Shared.Next() };
-            _user = new User { Id = Random.Shared.Next(), Username = $"ConsoleUser_{Guid.NewGuid()}" };
-        }
+            WriteLineColor("Бот запущен. Введите сообщение", ConsoleColor.Magenta);
+            var counter = 0;
 
-        public void SendMessage(Chat chat, string text)
-        {
-            ArgumentNullException.ThrowIfNull(chat, nameof(chat));
-            ArgumentNullException.ThrowIfNull(text, nameof(text));
-            if (_chat.Id != chat.Id)
-                throw new ArgumentException($"Invalid chat.Id. Support {_chat.Id}, but was {chat.Id}");
-
-            WriteLineColor($"Бот: {text}", ConsoleColor.Blue);
-        }
-
-        public void StartReceiving(IUpdateHandler handler)
-        {
-            ArgumentNullException.ThrowIfNull(handler, nameof(handler));
-
-            try
+            while (ct.IsCancellationRequested is false)
             {
-                WriteLineColor("Бот запущен. Введите сообщение", ConsoleColor.Magenta);
-                var counter = 0;
+                var input = Console.ReadLine();
+                if (input is null)
+                    break;
 
-                while (true)
+                var update = new Update
                 {
-                    var input = Console.ReadLine();
-                    if (input is null)
-                        break;
-
-                    var update = new Update
+                    Message = new Message
                     {
-                        Message = new Message
-                        {
-                            Id = Interlocked.Increment(ref counter),
-                            Text = input,
-                            Chat = _chat,
-                            From = _user
-                        }
-                    };
+                        Id = Interlocked.Increment(ref counter),
+                        Text = input,
+                        Chat = _chat,
+                        From = _user
+                    }
+                };
 
+                _ = Task.Run(async () =>
+                {
                     try
                     {
-                        handler.HandleUpdateAsync(this, update);
+                        await handler.HandleUpdateAsync(this, update, ct);
                     }
+                    catch (OperationCanceledException) { }
                     catch (Exception ex)
                     {
-                        handler.HandleErrorAsync(this, ex);
+                        try
+                        {
+                            await handler.HandleErrorAsync(this, ex, ct);
+                        }
+                        catch (OperationCanceledException) { }
                     }
-                }
-            }
-            finally
-            {
-                WriteLineColor("Бот остановлен", ConsoleColor.Magenta);
+                }, ct);
             }
         }
-
-        private static void WriteLineColor(string text, ConsoleColor color)
+        finally
         {
-            var currentColor = Console.ForegroundColor;
-            Console.ForegroundColor = color;
-            Console.WriteLine(text);
-            Console.ForegroundColor = currentColor;
+            WriteLineColor("Бот остановлен", ConsoleColor.Magenta);
         }
+    }
+
+    private static void WriteLineColor(string text, ConsoleColor color)
+    {
+        var currentColor = Console.ForegroundColor;
+        Console.ForegroundColor = color;
+        Console.WriteLine(text);
+        Console.ForegroundColor = currentColor;
+    }
+
+    private static async Task WriteLineColorAsync(string text, ConsoleColor color, CancellationToken ct)
+    {
+        var currentColor = Console.ForegroundColor;
+        Console.ForegroundColor = color;
+        await Console.Out.WriteLineAsync(text.AsMemory(), ct);
+        Console.ForegroundColor = currentColor;
     }
 }

@@ -12,21 +12,19 @@ namespace TgBot
         {
             try
             {
-                
+                using var cts = new CancellationTokenSource();
+
                 var userRepository = new InMemoryUserRepository();
                 var todoRepository = new InMemoryToDoRepository();
 
-                
                 var userService = new UserService(userRepository);
                 var todoService = new ToDoService(todoRepository);
                 var reportService = new ToDoReportService(todoRepository);
 
-                
                 var handler = new UpdateHandler(userService, todoService, reportService);
 
-                
                 var botClient = new ConsoleBotClient();
-                botClient.StartReceiving(handler);
+                botClient.StartReceiving(handler, cts.Token);
             }
             catch (Exception ex)
             {

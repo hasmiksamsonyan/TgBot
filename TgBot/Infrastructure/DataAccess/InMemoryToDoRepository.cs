@@ -10,51 +10,53 @@ namespace TgBot.Infrastructure.DataAccess
     {
         private readonly List<ToDoItem> _tasks = new List<ToDoItem>();
 
-        public void Add(ToDoItem item)
+        public Task Add(ToDoItem item, CancellationToken ct)
         {
             _tasks.Add(item);
+            return Task.CompletedTask;
         }
 
-        public void Delete(Guid id)
+        public Task Delete(Guid id, CancellationToken ct)
         {
-            var item = Get(id);
+            var item = _tasks.FirstOrDefault(t => t.Id == id);
             if (item != null)
                 _tasks.Remove(item);
+            return Task.CompletedTask;
         }
 
-        public ToDoItem? Get(Guid id)
+        public Task<ToDoItem?> Get(Guid id, CancellationToken ct)
         {
-            return _tasks.FirstOrDefault(t => t.Id == id);
+            return Task.FromResult(_tasks.FirstOrDefault(t => t.Id == id));
         }
 
-        public IReadOnlyList<ToDoItem> GetAllByUserId(Guid userId)
+        public Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken ct)
         {
-            return _tasks.Where(t => t.User.UserId == userId).ToList().AsReadOnly();
+            return Task.FromResult<IReadOnlyList<ToDoItem>>(_tasks.Where(t => t.User.UserId == userId).ToList().AsReadOnly());
         }
 
-        public IReadOnlyList<ToDoItem> GetActiveByUserId(Guid userId)
+        public Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken ct)
         {
-            return _tasks.Where(t => t.User.UserId == userId && t.State == ToDoItemState.Active).ToList().AsReadOnly();
+            return Task.FromResult<IReadOnlyList<ToDoItem>>(_tasks.Where(t => t.User.UserId == userId && t.State == ToDoItemState.Active).ToList().AsReadOnly());
         }
 
-        public void Update(ToDoItem item)
+        public Task Update(ToDoItem item, CancellationToken ct)
         {
-           
+            return Task.CompletedTask;
         }
 
-        public bool ExistsByName(Guid userId, string name)
+        public Task<bool> ExistsByName(Guid userId, string name, CancellationToken ct)
         {
-            return _tasks.Any(t => t.User.UserId == userId && t.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            return Task.FromResult(_tasks.Any(t => t.User.UserId == userId && t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)));
         }
 
-        public int CountActive(Guid userId)
+        public Task<int> CountActive(Guid userId, CancellationToken ct)
         {
-            return _tasks.Count(t => t.User.UserId == userId && t.State == ToDoItemState.Active);
+            return Task.FromResult(_tasks.Count(t => t.User.UserId == userId && t.State == ToDoItemState.Active));
         }
 
-        public IReadOnlyList<ToDoItem> Find(Guid userId, Func<ToDoItem, bool> predicate)
+        public Task<IReadOnlyList<ToDoItem>> Find(Guid userId, Func<ToDoItem, bool> predicate, CancellationToken ct)
         {
-            return _tasks.Where(t => t.User.UserId == userId && predicate(t)).ToList().AsReadOnly();
+            return Task.FromResult<IReadOnlyList<ToDoItem>>(_tasks.Where(t => t.User.UserId == userId && predicate(t)).ToList().AsReadOnly());
         }
     }
 }
