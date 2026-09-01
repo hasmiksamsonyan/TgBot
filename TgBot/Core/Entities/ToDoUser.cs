@@ -1,6 +1,6 @@
 using System;
 
-namespace TelegramBot
+namespace TgBot.Core.Entities
 {
     public class ToDoUser
     {
