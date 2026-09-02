@@ -5,6 +5,7 @@ namespace TgBot.Scenarios
         None,
         AddTask,
         AddList,
-        DeleteList
+        DeleteList,
+        DeleteTask
     }
 }

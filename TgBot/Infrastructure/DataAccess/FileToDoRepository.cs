@@ -2,6 +2,7 @@ using System.Text.Json;
 using TgBot.Core.DataAccess;
 using TgBot.Core.Entities;
 
+
 namespace TgBot.Infrastructure.DataAccess
 {
     public class FileToDoRepository : IToDoRepository
@@ -55,29 +56,39 @@ namespace TgBot.Infrastructure.DataAccess
         }
 
         public async Task<ToDoItem?> Get(
-            Guid id,
-            CancellationToken ct)
+    Guid id,
+    CancellationToken ct)
         {
             var index = await GetIndex(ct);
 
+            
             if (!index.TryGetValue(id, out Guid userId))
+            {
                 return null;
-
+            }
+                        
             string filePath = Path.Combine(
                 _baseFolder,
                 userId.ToString(),
                 $"{id}.json");
 
+            
             if (!File.Exists(filePath))
+            {
                 return null;
+            }
 
             string json = await File.ReadAllTextAsync(
                 filePath,
                 ct);
 
-            return JsonSerializer.Deserialize<ToDoItem>(
+            
+            var task = JsonSerializer.Deserialize<ToDoItem>(
                 json,
                 _jsonOptions);
+
+            
+            return task;
         }
 
         public async Task<IReadOnlyList<ToDoItem>> GetAllByUserId(
@@ -104,11 +115,14 @@ namespace TgBot.Infrastructure.DataAccess
                     ct);
 
                 var item = JsonSerializer.Deserialize<ToDoItem>(
-                    json,
-                    _jsonOptions);
+    json,
+    _jsonOptions);
 
                 if (item != null)
+                {
+                    
                     result.Add(item);
+                }
             }
 
             return result.AsReadOnly();

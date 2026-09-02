@@ -13,6 +13,8 @@ namespace TgBot
     {
         static async Task Main(string[] args)
         {
+            Console.WriteLine(
+    
             using var cts = new CancellationTokenSource();
 
             var userRepository =
@@ -40,21 +42,24 @@ namespace TgBot
                 new InMemoryScenarioContextRepository();
 
             var scenarios = new IScenario[]
-            {
-                new AddTaskScenario(
-                    userService,
-                    todoService,
-                    todoListService),
+{
+    new AddTaskScenario(
+        userService,
+        todoService,
+        todoListService),
 
-                new AddListScenario(
-                    userService,
-                    todoListService),
+    new AddListScenario(
+        userService,
+        todoListService),
 
-                new DeleteListScenario(
-                    userService,
-                    todoListService,
-                    todoService)
-            };
+    new DeleteListScenario(
+        userService,
+        todoListService,
+        todoService),
+
+    new DeleteTaskScenario(
+        todoService)
+};
 
             var handler = new UpdateHandler(
                 userService,

@@ -7,7 +7,7 @@ namespace TgBot.Core.Services
     public interface IToDoService
     {
         Task<IReadOnlyList<ToDoItem>> GetAllByUserId(Guid userId, CancellationToken ct);
-        Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken ct);
+        Task<ToDoItem?> Get(Guid toDoItemId,CancellationToken ct); Task<IReadOnlyList<ToDoItem>> GetActiveByUserId(Guid userId, CancellationToken ct);
         Task<IReadOnlyList<ToDoItem>> GetByUserIdAndList(
     Guid userId,
     Guid? listId,

@@ -121,5 +121,10 @@ namespace TgBot.Core.Services
                     StringComparison.OrdinalIgnoreCase),
                 ct);
         }
+        public async Task<ToDoItem?> Get(
+            Guid toDoItemId,CancellationToken ct)
+                {
+                    return await _todoRepository.Get(toDoItemId,ct);
+                }
     }
 }

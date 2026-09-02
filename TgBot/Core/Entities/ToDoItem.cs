@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace TgBot.Core.Entities
 {
@@ -13,11 +14,12 @@ namespace TgBot.Core.Entities
         public ToDoItemState State { get; private set; }
         public DateTime? StateChangedAt { get; private set; }
 
+       
         public ToDoItem(
-    ToDoUser user,
-    string name,
-    ToDoList? list,
-    DateTime deadline)
+            ToDoUser user,
+            string name,
+            ToDoList? list,
+            DateTime deadline)
         {
             Id = Guid.NewGuid();
             User = user;
@@ -27,6 +29,28 @@ namespace TgBot.Core.Entities
             Deadline = deadline;
             State = ToDoItemState.Active;
             StateChangedAt = null;
+        }
+
+        
+        [JsonConstructor]
+        public ToDoItem(
+            Guid id,
+            ToDoUser user,
+            string name,
+            ToDoList? list,
+            DateTime createdAt,
+            DateTime deadline,
+            ToDoItemState state,
+            DateTime? stateChangedAt)
+        {
+            Id = id;
+            User = user;
+            List = list;
+            Name = name;
+            CreatedAt = createdAt;
+            Deadline = deadline;
+            State = state;
+            StateChangedAt = stateChangedAt;
         }
 
         public void Complete()
