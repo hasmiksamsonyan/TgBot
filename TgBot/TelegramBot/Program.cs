@@ -14,9 +14,8 @@ namespace TgBot
         {
             using var cts = new CancellationTokenSource();
 
-            var userRepository = new InMemoryUserRepository();
-            var todoRepository = new InMemoryToDoRepository();
-
+            var userRepository = new FileUserRepository("Data/Users");
+            var todoRepository = new FileToDoRepository("Data/Tasks");
             var userService = new UserService(userRepository);
             var todoService = new ToDoService(todoRepository);
             var reportService = new ToDoReportService(todoRepository);
