@@ -32,12 +32,28 @@ namespace TgBot.Core.Services
         {
             return await _todoRepository.GetActiveByUserId(userId, ct);
         }
+        public async Task<IReadOnlyList<ToDoItem>> GetByUserIdAndList(
+    Guid userId,
+    Guid? listId,
+    CancellationToken ct)
+        {
+            var tasks = await _todoRepository.GetAllByUserId(
+                userId,
+                ct);
+
+            return tasks
+                .Where(task =>
+                    task.List?.Id == listId)
+                .ToList()
+                .AsReadOnly();
+        }
 
         public async Task<ToDoItem> Add(
-            ToDoUser user,
-            string name,
-            DateTime deadline,
-            CancellationToken ct)
+    ToDoUser user,
+    string name,
+    DateTime deadline,
+    ToDoList? list,
+    CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Название задачи не может быть пустым");
@@ -62,10 +78,7 @@ namespace TgBot.Core.Services
                 throw new TaskCountLimitException(MaxTaskCount);
             }
 
-            var task = new ToDoItem(
-                user,
-                name,
-                deadline);
+            var task = new ToDoItem(user, name, list, deadline);
 
             await _todoRepository.Add(task, ct);
 

@@ -15,30 +15,65 @@ namespace TgBot
         {
             using var cts = new CancellationTokenSource();
 
-            var userRepository = new FileUserRepository("Data/Users");
-            var todoRepository = new FileToDoRepository("Data/Tasks");
-            var userService = new UserService(userRepository);
-            var todoService = new ToDoService(todoRepository);
-            var reportService = new ToDoReportService(todoRepository);
+            var userRepository =
+                new FileUserRepository("Data/Users");
 
-            var contextRepository = new InMemoryScenarioContextRepository();
+            var todoRepository =
+                new FileToDoRepository("Data/Tasks");
+
+            var todoListRepository =
+                new FileToDoListRepository("Data/Lists");
+
+            var userService =
+                new UserService(userRepository);
+
+            var todoService =
+                new ToDoService(todoRepository);
+
+            var todoListService =
+                new ToDoListService(todoListRepository);
+
+            var reportService =
+                new ToDoReportService(todoRepository);
+
+            var contextRepository =
+                new InMemoryScenarioContextRepository();
 
             var scenarios = new IScenario[]
             {
-    new AddTaskScenario(userService, todoService)
+                new AddTaskScenario(
+                    userService,
+                    todoService,
+                    todoListService),
+
+                new AddListScenario(
+                    userService,
+                    todoListService),
+
+                new DeleteListScenario(
+                    userService,
+                    todoListService,
+                    todoService)
             };
+
             var handler = new UpdateHandler(
                 userService,
                 todoService,
                 reportService,
+                todoListService,
                 scenarios,
                 contextRepository);
 
-            var botClient = new TelegramBotClient("ТОКЕН");
+            var botClient =
+                new TelegramBotClient("8785221128:AAEZmQa_xl10__E_lBRdeLnU9CrM7XN7E6w");
 
             var receiverOptions = new ReceiverOptions
             {
-                AllowedUpdates = [UpdateType.Message],
+                AllowedUpdates =
+                [
+                    UpdateType.Message,
+                    UpdateType.CallbackQuery
+                ],
                 DropPendingUpdates = true
             };
 
@@ -52,13 +87,13 @@ namespace TgBot
                     },
                     new BotCommand
                     {
-                        Command = "showtasks",
-                        Description = "Показать активные задачи"
+                        Command = "addtask",
+                        Description = "Добавить задачу"
                     },
                     new BotCommand
                     {
-                        Command = "showalltasks",
-                        Description = "Показать все задачи"
+                        Command = "show",
+                        Description = "Показать списки задач"
                     },
                     new BotCommand
                     {
@@ -76,8 +111,11 @@ namespace TgBot
 
             var me = await botClient.GetMe(cts.Token);
 
-            Console.WriteLine($"{me.FirstName} запущен!");
-            Console.WriteLine("Нажмите клавишу A для выхода.");
+            Console.WriteLine(
+                $"{me.FirstName} запущен!");
+
+            Console.WriteLine(
+                "Нажмите клавишу A для выхода.");
 
             while (true)
             {

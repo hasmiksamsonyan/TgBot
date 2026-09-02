@@ -1,7 +1,9 @@
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 using TgBot.Core.Entities;
 using TgBot.Core.Services;
+using TgBot.Dto;
 
 namespace TgBot.Scenarios
 {
@@ -9,13 +11,16 @@ namespace TgBot.Scenarios
     {
         private readonly IUserService _userService;
         private readonly IToDoService _todoService;
+        private readonly IToDoListService _todoListService;
 
         public AddTaskScenario(
             IUserService userService,
-            IToDoService todoService)
+            IToDoService todoService,
+            IToDoListService todoListService)
         {
             _userService = userService;
             _todoService = todoService;
+            _todoListService = todoListService;
         }
 
         public bool CanHandle(ScenarioType scenario)
@@ -38,8 +43,10 @@ namespace TgBot.Scenarios
                             ct);
 
                         if (user == null)
+                        {
                             throw new InvalidOperationException(
                                 "Пользователь не найден.");
+                        }
 
                         context.Data["User"] = user;
 
@@ -67,12 +74,42 @@ namespace TgBot.Scenarios
 
                         context.Data["Name"] = message.Text.Trim();
 
+                        var user = (ToDoUser)context.Data["User"];
+
+                        var lists = await _todoListService.GetUserLists(
+                            user.UserId,
+                            ct);
+
+                        var buttons = new List<InlineKeyboardButton>();
+
+                        buttons.Add(
+                            InlineKeyboardButton.WithCallbackData(
+                                "📌 Без списка",
+                                new ToDoListCallbackDto
+                                {
+                                    Action = "addtask",
+                                    ToDoListId = null
+                                }.ToString()));
+
+                        foreach (var list in lists)
+                        {
+                            buttons.Add(
+                                InlineKeyboardButton.WithCallbackData(
+                                    list.Name,
+                                    new ToDoListCallbackDto
+                                    {
+                                        Action = "addtask",
+                                        ToDoListId = list.Id
+                                    }.ToString()));
+                        }
+
                         await bot.SendMessage(
                             message.Chat.Id,
-                            "Введите дату выполнения в формате dd.MM.yyyy:",
+                            "Выберите список:",
+                            replyMarkup: new InlineKeyboardMarkup(buttons),
                             cancellationToken: ct);
 
-                        context.CurrentStep = "Deadline";
+                        context.CurrentStep = "List";
 
                         return ScenarioResult.Transition;
                     }
@@ -96,11 +133,15 @@ namespace TgBot.Scenarios
 
                         var user = (ToDoUser)context.Data["User"];
                         var name = (string)context.Data["Name"];
+                        var list = context.Data.TryGetValue("List", out var storedList)
+    ? storedList as ToDoList
+    : null;
 
                         var task = await _todoService.Add(
                             user,
                             name,
                             deadline,
+                            list,
                             ct);
 
                         await bot.SendMessage(
@@ -115,6 +156,58 @@ namespace TgBot.Scenarios
                     throw new InvalidOperationException(
                         $"Неизвестный шаг сценария: {context.CurrentStep}");
             }
+        }
+
+        public async Task<ScenarioResult> HandleCallbackQueryAsync(
+            ITelegramBotClient bot,
+            ScenarioContext context,
+            CallbackQuery callbackQuery,
+            CancellationToken ct)
+        {
+            if (context.CurrentStep != "List")
+            {
+                return ScenarioResult.Transition;
+            }
+
+            var dto = ToDoListCallbackDto.FromString(
+                callbackQuery.Data ?? "");
+
+            if (dto.Action != "addtask")
+            {
+                return ScenarioResult.Transition;
+            }
+
+            if (dto.ToDoListId == null)
+            {
+                context.Data.Remove("List");
+            }
+            else
+            {
+                var list = await _todoListService.Get(
+                    dto.ToDoListId.Value,
+                    ct);
+
+                if (list == null)
+                {
+                    await bot.SendMessage(
+                        callbackQuery.Message!.Chat.Id,
+                        "Список не найден. Попробуйте ещё раз.",
+                        cancellationToken: ct);
+
+                    return ScenarioResult.Transition;
+                }
+
+                context.Data["List"] = list;
+            }
+
+            await bot.SendMessage(
+                callbackQuery.Message!.Chat.Id,
+                "Введите дату выполнения в формате dd.MM.yyyy:",
+                cancellationToken: ct);
+
+            context.CurrentStep = "Deadline";
+
+            return ScenarioResult.Transition;
         }
     }
 }

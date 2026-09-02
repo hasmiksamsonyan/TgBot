@@ -1,13 +1,11 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace TgBot.Scenarios
 {
     public class InMemoryScenarioContextRepository : IScenarioContextRepository
     {
-        private readonly Dictionary<long, ScenarioContext> _contexts =
-            new Dictionary<long, ScenarioContext>();
+        private readonly ConcurrentDictionary<long, ScenarioContext> _contexts =
+            new ConcurrentDictionary<long, ScenarioContext>();
 
         public Task<ScenarioContext?> GetContext(
             long userId,
@@ -32,7 +30,7 @@ namespace TgBot.Scenarios
             long userId,
             CancellationToken ct)
         {
-            _contexts.Remove(userId);
+            _contexts.TryRemove(userId, out _);
 
             return Task.CompletedTask;
         }

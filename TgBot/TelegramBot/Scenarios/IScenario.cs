@@ -12,5 +12,11 @@ namespace TgBot.Scenarios
             ScenarioContext context,
             Message message,
             CancellationToken ct);
+
+        Task<ScenarioResult> HandleCallbackQueryAsync(
+            ITelegramBotClient bot,
+            ScenarioContext context,
+            CallbackQuery callbackQuery,
+            CancellationToken ct);
     }
 }
