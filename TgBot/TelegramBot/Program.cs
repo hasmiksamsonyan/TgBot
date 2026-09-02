@@ -65,7 +65,7 @@ namespace TgBot
                 contextRepository);
 
             var botClient =
-                new TelegramBotClient("8785221128:AAEZmQa_xl10__E_lBRdeLnU9CrM7XN7E6w");
+                new TelegramBotClient("ТОКЕН");
 
             var receiverOptions = new ReceiverOptions
             {
