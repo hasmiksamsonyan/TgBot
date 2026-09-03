@@ -78,7 +78,17 @@ namespace TgBot.Core.Services
                 throw new TaskCountLimitException(MaxTaskCount);
             }
 
-            var task = new ToDoItem(user, name, list, deadline);
+            var task = new ToDoItem
+            {
+                Id = Guid.NewGuid(),
+                User = user,
+                Name = name,
+                List = list,
+                CreatedAt = DateTime.UtcNow,
+                Deadline = deadline,
+                State = ToDoItemState.Active,
+                StateChangedAt = null
+            }; ;
 
             await _todoRepository.Add(task, ct);
 
@@ -94,7 +104,13 @@ namespace TgBot.Core.Services
             if (task == null)
                 throw new ArgumentException("Задача не найдена");
 
-            task.Complete();
+            if (task.State == ToDoItemState.Completed)
+            {
+                throw new InvalidOperationException("Задача уже выполнена");
+            }
+
+            task.State = ToDoItemState.Completed;
+            task.StateChangedAt = DateTime.UtcNow;
 
             await _todoRepository.Update(task, ct);
         }

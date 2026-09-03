@@ -18,7 +18,13 @@ namespace TgBot.Core.Services
             if (existing != null)
                 throw new InvalidOperationException("Пользователь уже зарегистрирован");
 
-            var user = new ToDoUser(telegramUserId, telegramUserName);
+            var user = new ToDoUser
+            {
+                UserId = Guid.NewGuid(),
+                TelegramUserId = telegramUserId,
+                TelegramUserName = telegramUserName,
+                RegisteredAt = DateTime.UtcNow
+            };
             await _userRepository.Add(user, ct);
             return user;
         }

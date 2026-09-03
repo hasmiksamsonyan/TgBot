@@ -13,18 +13,22 @@ namespace TgBot
     {
         static async Task Main(string[] args)
         {
-            Console.WriteLine(
-    
             using var cts = new CancellationTokenSource();
 
+            var connectionString =
+    "Host=localhost;Port=5432;Database=ToDoList;Username=ник;Password=пароль";
+
+            var dataContextFactory =
+                new DataContextFactory(connectionString);
+
             var userRepository =
-                new FileUserRepository("Data/Users");
+                new SqlUserRepository(dataContextFactory);
 
             var todoRepository =
-                new FileToDoRepository("Data/Tasks");
+                new SqlToDoRepository(dataContextFactory);
 
             var todoListRepository =
-                new FileToDoListRepository("Data/Lists");
+                new SqlToDoListRepository(dataContextFactory);
 
             var userService =
                 new UserService(userRepository);
@@ -42,24 +46,24 @@ namespace TgBot
                 new InMemoryScenarioContextRepository();
 
             var scenarios = new IScenario[]
-{
-    new AddTaskScenario(
-        userService,
-        todoService,
-        todoListService),
+            {
+                new AddTaskScenario(
+                    userService,
+                    todoService,
+                    todoListService),
 
-    new AddListScenario(
-        userService,
-        todoListService),
+                new AddListScenario(
+                    userService,
+                    todoListService),
 
-    new DeleteListScenario(
-        userService,
-        todoListService,
-        todoService),
+                new DeleteListScenario(
+                    userService,
+                    todoListService,
+                    todoService),
 
-    new DeleteTaskScenario(
-        todoService)
-};
+                new DeleteTaskScenario(
+                    todoService)
+            };
 
             var handler = new UpdateHandler(
                 userService,
@@ -70,7 +74,7 @@ namespace TgBot
                 contextRepository);
 
             var botClient =
-                new TelegramBotClient("ТОКЕН");
+                new TelegramBotClient("токен");
 
             var receiverOptions = new ReceiverOptions
             {

@@ -38,7 +38,13 @@ namespace TgBot.Core.Services
                     "Список с таким названием уже существует");
             }
 
-            var list = new ToDoList(user, name);
+            var list = new ToDoList
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                User = user,
+                CreatedAt = DateTime.UtcNow
+            };
 
             await _listRepository.Add(list, ct);
 
