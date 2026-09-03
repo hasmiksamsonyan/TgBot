@@ -2,7 +2,8 @@ using System.Collections.Concurrent;
 
 namespace TgBot.Scenarios
 {
-    public class InMemoryScenarioContextRepository : IScenarioContextRepository
+    public class InMemoryScenarioContextRepository
+        : IScenarioContextRepository
     {
         private readonly ConcurrentDictionary<long, ScenarioContext> _contexts =
             new ConcurrentDictionary<long, ScenarioContext>();
@@ -11,7 +12,9 @@ namespace TgBot.Scenarios
             long userId,
             CancellationToken ct)
         {
-            _contexts.TryGetValue(userId, out var context);
+            _contexts.TryGetValue(
+                userId,
+                out var context);
 
             return Task.FromResult(context);
         }
@@ -30,9 +33,26 @@ namespace TgBot.Scenarios
             long userId,
             CancellationToken ct)
         {
-            _contexts.TryRemove(userId, out _);
+            _contexts.TryRemove(
+                userId,
+                out _);
 
             return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<(long UserId, ScenarioContext Context)>> GetContexts(
+            CancellationToken ct)
+        {
+            var contexts =
+                _contexts
+                    .Select(
+                        item =>
+                            (item.Key, item.Value))
+                    .ToList();
+
+            return Task.FromResult<
+                IReadOnlyList<(long UserId, ScenarioContext Context)>
+            >(contexts);
         }
     }
 }

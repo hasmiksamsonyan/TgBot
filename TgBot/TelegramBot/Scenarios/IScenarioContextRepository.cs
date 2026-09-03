@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,9 @@ namespace TgBot.Scenarios
 
         Task ResetContext(
             long userId,
+            CancellationToken ct);
+
+        Task<IReadOnlyList<(long UserId, ScenarioContext Context)>> GetContexts(
             CancellationToken ct);
     }
 }

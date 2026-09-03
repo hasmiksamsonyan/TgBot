@@ -2,6 +2,7 @@
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using TgBot.BackgroundTasks;
 using TgBot.Core.DataAccess;
 using TgBot.Core.Services;
 using TgBot.Infrastructure.DataAccess;
@@ -16,7 +17,7 @@ namespace TgBot
             using var cts = new CancellationTokenSource();
 
             var connectionString =
-    "Host=localhost;Port=5432;Database=ToDoList;Username=ник;Password=пароль";
+                "Host=localhost;Port=5432;Database=ToDoList;Username=логин;Password=пароль";
 
             var dataContextFactory =
                 new DataContextFactory(connectionString);
@@ -44,6 +45,9 @@ namespace TgBot
 
             var contextRepository =
                 new InMemoryScenarioContextRepository();
+
+            var backgroundTaskRunner =
+                new BackgroundTaskRunner();
 
             var scenarios = new IScenario[]
             {
@@ -74,7 +78,18 @@ namespace TgBot
                 contextRepository);
 
             var botClient =
-                new TelegramBotClient("токен");
+                new TelegramBotClient("ТОКЕН");
+
+            var resetScenarioBackgroundTask =
+    new ResetScenarioBackgroundTask(
+        TimeSpan.FromHours(1),
+        contextRepository,
+        botClient);
+
+            backgroundTaskRunner.AddTask(
+                resetScenarioBackgroundTask);
+
+            backgroundTaskRunner.StartTasks(cts.Token);
 
             var receiverOptions = new ReceiverOptions
             {
@@ -132,7 +147,11 @@ namespace TgBot
 
                 if (key.Key == ConsoleKey.A)
                 {
+                    await backgroundTaskRunner.StopTasks(
+                    CancellationToken.None);
+
                     cts.Cancel();
+
                     break;
                 }
 
