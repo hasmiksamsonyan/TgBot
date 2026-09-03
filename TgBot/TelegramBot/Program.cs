@@ -5,6 +5,7 @@ using Telegram.Bot.Types.Enums;
 using TgBot.BackgroundTasks;
 using TgBot.Core.DataAccess;
 using TgBot.Core.Services;
+using TgBot.Infrastructure;
 using TgBot.Infrastructure.DataAccess;
 using TgBot.Scenarios;
 
@@ -42,6 +43,9 @@ namespace TgBot
 
             var reportService =
                 new ToDoReportService(todoRepository);
+
+            var notificationService =
+                new NotificationService(dataContextFactory);
 
             var contextRepository =
                 new InMemoryScenarioContextRepository();
@@ -81,13 +85,39 @@ namespace TgBot
                 new TelegramBotClient("ТОКЕН");
 
             var resetScenarioBackgroundTask =
-    new ResetScenarioBackgroundTask(
-        TimeSpan.FromHours(1),
-        contextRepository,
-        botClient);
+                new ResetScenarioBackgroundTask(
+                    TimeSpan.FromHours(1),
+                    contextRepository,
+                    botClient);
+
+            var notificationBackgroundTask =
+                new NotificationBackgroundTask(
+                    notificationService,
+                    botClient);
+
+            var deadlineBackgroundTask =
+                new DeadlineBackgroundTask(
+                    notificationService,
+                    userRepository,
+                    todoRepository);
+
+            var todayBackgroundTask =
+                new TodayBackgroundTask(
+                    notificationService,
+                    userRepository,
+                    todoRepository);
 
             backgroundTaskRunner.AddTask(
                 resetScenarioBackgroundTask);
+
+            backgroundTaskRunner.AddTask(
+                notificationBackgroundTask);
+
+            backgroundTaskRunner.AddTask(
+                deadlineBackgroundTask);
+
+            backgroundTaskRunner.AddTask(
+                todayBackgroundTask);
 
             backgroundTaskRunner.StartTasks(cts.Token);
 
@@ -148,7 +178,7 @@ namespace TgBot
                 if (key.Key == ConsoleKey.A)
                 {
                     await backgroundTaskRunner.StopTasks(
-                    CancellationToken.None);
+                        CancellationToken.None);
 
                     cts.Cancel();
 

@@ -7,7 +7,11 @@ namespace TgBot.Infrastructure.DataAccess;
 public class ToDoDataContext : DataConnection
 {
     public ToDoDataContext(string connectionString)
-        : base(ProviderName.PostgreSQL, connectionString)
+        : base(
+            new DataOptions()
+                .UseConnectionString(
+                    ProviderName.PostgreSQL,
+                    connectionString))
     {
     }
 
@@ -19,4 +23,7 @@ public class ToDoDataContext : DataConnection
 
     public ITable<ToDoItemModel> ToDoItems =>
         DataExtensions.GetTable<ToDoItemModel>(this);
+
+    public ITable<NotificationModel> Notifications =>
+        DataExtensions.GetTable<NotificationModel>(this);
 }

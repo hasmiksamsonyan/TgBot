@@ -50,4 +50,20 @@ CREATE INDEX "IX_ToDoItem_ListId"
 CREATE UNIQUE INDEX "IX_ToDoUser_TelegramUserId"
     ON "ToDoUser" ("TelegramUserId");
 
+    CREATE TABLE "Notification"
+(
+    "Id" UUID PRIMARY KEY,
+    "UserId" UUID NOT NULL,
+    "Type" TEXT NOT NULL,
+    "Text" TEXT NOT NULL,
+    "ScheduledAt" TIMESTAMP NOT NULL,
+    "IsNotified" BOOLEAN NOT NULL,
+    "NotifiedAt" TIMESTAMP NULL,
 
+    CONSTRAINT "FK_Notification_ToDoUser"
+        FOREIGN KEY ("UserId")
+        REFERENCES "ToDoUser" ("UserId")
+);
+
+CREATE INDEX "IX_Notification_UserId"
+    ON "Notification" ("UserId");

@@ -8,22 +8,41 @@ namespace TgBot.Infrastructure.DataAccess
 {
     public class InMemoryUserRepository : IUserRepository
     {
-        private readonly List<ToDoUser> _users = new List<ToDoUser>();
+        private readonly List<ToDoUser> _users =
+            new List<ToDoUser>();
 
-        public Task Add(ToDoUser user, CancellationToken ct)
+        public Task Add(
+            ToDoUser user,
+            CancellationToken ct)
         {
             _users.Add(user);
+
             return Task.CompletedTask;
         }
 
-        public Task<ToDoUser?> GetUser(Guid userId, CancellationToken ct)
+        public Task<ToDoUser?> GetUser(
+            Guid userId,
+            CancellationToken ct)
         {
-            return Task.FromResult(_users.FirstOrDefault(u => u.UserId == userId));
+            return Task.FromResult(
+                _users.FirstOrDefault(
+                    u => u.UserId == userId));
         }
 
-        public Task<ToDoUser?> GetUserByTelegramUserId(long telegramUserId, CancellationToken ct)
+        public Task<ToDoUser?> GetUserByTelegramUserId(
+            long telegramUserId,
+            CancellationToken ct)
         {
-            return Task.FromResult(_users.FirstOrDefault(u => u.TelegramUserId == telegramUserId));
+            return Task.FromResult(
+                _users.FirstOrDefault(
+                    u => u.TelegramUserId == telegramUserId));
+        }
+
+        public Task<IReadOnlyList<ToDoUser>> GetUsers(
+            CancellationToken ct)
+        {
+            return Task.FromResult<IReadOnlyList<ToDoUser>>(
+                _users.AsReadOnly());
         }
     }
 }

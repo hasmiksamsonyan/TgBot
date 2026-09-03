@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using TgBot.Core.DataAccess;
@@ -13,13 +14,16 @@ namespace TgBot.Infrastructure.DataAccess
         public FileUserRepository(string basePath)
         {
             _basePath = basePath;
+
             if (!Directory.Exists(_basePath))
             {
                 Directory.CreateDirectory(_basePath);
             }
         }
 
-        public async Task Add(ToDoUser user, CancellationToken ct)
+        public async Task Add(
+            ToDoUser user,
+            CancellationToken ct)
         {
             string filePath = Path.Combine(
                 _basePath,
@@ -27,7 +31,10 @@ namespace TgBot.Infrastructure.DataAccess
 
             string json = JsonSerializer.Serialize(user);
 
-            await File.WriteAllTextAsync(filePath, json, ct);
+            await File.WriteAllTextAsync(
+                filePath,
+                json,
+                ct);
         }
 
         public async Task<ToDoUser?> GetUser(
@@ -41,7 +48,9 @@ namespace TgBot.Infrastructure.DataAccess
             if (!File.Exists(filePath))
                 return null;
 
-            string json = await File.ReadAllTextAsync(filePath, ct);
+            string json = await File.ReadAllTextAsync(
+                filePath,
+                ct);
 
             return JsonSerializer.Deserialize<ToDoUser>(json);
         }
@@ -53,11 +62,15 @@ namespace TgBot.Infrastructure.DataAccess
             if (!Directory.Exists(_basePath))
                 return null;
 
-            foreach (string filePath in Directory.GetFiles(_basePath, "*.json"))
+            foreach (string filePath in Directory.GetFiles(
+                _basePath,
+                "*.json"))
             {
                 ct.ThrowIfCancellationRequested();
 
-                string json = await File.ReadAllTextAsync(filePath, ct);
+                string json = await File.ReadAllTextAsync(
+                    filePath,
+                    ct);
 
                 var user = JsonSerializer.Deserialize<ToDoUser>(json);
 
@@ -69,6 +82,35 @@ namespace TgBot.Infrastructure.DataAccess
             }
 
             return null;
+        }
+
+        public async Task<IReadOnlyList<ToDoUser>> GetUsers(
+            CancellationToken ct)
+        {
+            if (!Directory.Exists(_basePath))
+                return Array.Empty<ToDoUser>();
+
+            var users = new List<ToDoUser>();
+
+            foreach (string filePath in Directory.GetFiles(
+                _basePath,
+                "*.json"))
+            {
+                ct.ThrowIfCancellationRequested();
+
+                string json = await File.ReadAllTextAsync(
+                    filePath,
+                    ct);
+
+                var user = JsonSerializer.Deserialize<ToDoUser>(json);
+
+                if (user != null)
+                {
+                    users.Add(user);
+                }
+            }
+
+            return users.AsReadOnly();
         }
     }
 }

@@ -60,4 +60,17 @@ public class SqlUserRepository : IUserRepository
             model,
             token: ct);
     }
+
+    public async Task<IReadOnlyList<ToDoUser>> GetUsers(
+        CancellationToken ct)
+    {
+        using var dbContext = _factory.CreateDataContext();
+
+        var models = await dbContext.ToDoUsers
+            .ToListAsync(ct);
+
+        return models
+            .Select(ModelMapper.MapFromModel)
+            .ToList();
+    }
 }

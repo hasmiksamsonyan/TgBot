@@ -2,7 +2,6 @@ using System.Text.Json;
 using TgBot.Core.DataAccess;
 using TgBot.Core.Entities;
 
-
 namespace TgBot.Infrastructure.DataAccess
 {
     public class FileToDoRepository : IToDoRepository
@@ -56,23 +55,21 @@ namespace TgBot.Infrastructure.DataAccess
         }
 
         public async Task<ToDoItem?> Get(
-    Guid id,
-    CancellationToken ct)
+            Guid id,
+            CancellationToken ct)
         {
             var index = await GetIndex(ct);
 
-            
             if (!index.TryGetValue(id, out Guid userId))
             {
                 return null;
             }
-                        
+
             string filePath = Path.Combine(
                 _baseFolder,
                 userId.ToString(),
                 $"{id}.json");
 
-            
             if (!File.Exists(filePath))
             {
                 return null;
@@ -82,12 +79,10 @@ namespace TgBot.Infrastructure.DataAccess
                 filePath,
                 ct);
 
-            
             var task = JsonSerializer.Deserialize<ToDoItem>(
                 json,
                 _jsonOptions);
 
-            
             return task;
         }
 
@@ -115,12 +110,11 @@ namespace TgBot.Infrastructure.DataAccess
                     ct);
 
                 var item = JsonSerializer.Deserialize<ToDoItem>(
-    json,
-    _jsonOptions);
+                    json,
+                    _jsonOptions);
 
                 if (item != null)
                 {
-                    
                     result.Add(item);
                 }
             }
@@ -136,6 +130,23 @@ namespace TgBot.Infrastructure.DataAccess
 
             return tasks
                 .Where(t => t.State == ToDoItemState.Active)
+                .ToList()
+                .AsReadOnly();
+        }
+
+        public async Task<IReadOnlyList<ToDoItem>> GetActiveWithDeadline(
+            Guid userId,
+            DateTime from,
+            DateTime to,
+            CancellationToken ct)
+        {
+            var tasks = await GetAllByUserId(userId, ct);
+
+            return tasks
+                .Where(t =>
+                    t.State == ToDoItemState.Active &&
+                    t.Deadline >= from &&
+                    t.Deadline <= to)
                 .ToList()
                 .AsReadOnly();
         }
