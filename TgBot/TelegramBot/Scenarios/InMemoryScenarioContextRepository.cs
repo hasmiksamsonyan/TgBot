@@ -1,40 +1,45 @@
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace TgBot.Scenarios
 {
     public class InMemoryScenarioContextRepository : IScenarioContextRepository
     {
-        private readonly Dictionary<long, ScenarioContext> _contexts =
-            new Dictionary<long, ScenarioContext>();
+        private readonly ConcurrentDictionary<long, ScenarioContext> _contexts =
+            new ConcurrentDictionary<long, ScenarioContext>();
 
-        public Task<ScenarioContext?> GetContext(
+        public ValueTask<ScenarioContext?> GetContext(
             long userId,
             CancellationToken ct)
         {
-            _contexts.TryGetValue(userId, out var context);
+            ct.ThrowIfCancellationRequested();
 
-            return Task.FromResult(context);
+            return new ValueTask<ScenarioContext?>(
+                _contexts.TryGetValue(userId, out var context)
+                    ? context
+                    : null);
         }
 
-        public Task SetContext(
+        public ValueTask SetContext(
             long userId,
             ScenarioContext context,
             CancellationToken ct)
         {
+            ct.ThrowIfCancellationRequested();
+
             _contexts[userId] = context;
 
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
-        public Task ResetContext(
+        public ValueTask ResetContext(
             long userId,
             CancellationToken ct)
         {
-            _contexts.Remove(userId);
+            ct.ThrowIfCancellationRequested();
 
-            return Task.CompletedTask;
+            _contexts.TryRemove(userId, out _);
+
+            return ValueTask.CompletedTask;
         }
     }
 }

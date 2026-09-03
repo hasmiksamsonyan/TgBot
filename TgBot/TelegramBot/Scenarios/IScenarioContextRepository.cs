@@ -1,20 +1,19 @@
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace TgBot.Scenarios
 {
     public interface IScenarioContextRepository
     {
-        Task<ScenarioContext?> GetContext(
+        ValueTask<ScenarioContext?> GetContext(
             long userId,
             CancellationToken ct);
 
-        Task SetContext(
+        ValueTask SetContext(
             long userId,
             ScenarioContext context,
             CancellationToken ct);
 
-        Task ResetContext(
+        ValueTask ResetContext(
             long userId,
             CancellationToken ct);
     }

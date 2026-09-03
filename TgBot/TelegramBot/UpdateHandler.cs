@@ -45,7 +45,6 @@ namespace TgBot
 
                 var user = await _userService.GetUser(tgUser.Id, ct);
 
-                // Пользователь ещё не зарегистрирован
                 if (user == null)
                 {
                     if (text != "/start")
@@ -73,7 +72,6 @@ namespace TgBot
                     return;
                 }
 
-                // Проверяем, есть ли активный сценарий
                 var context = await _contextRepository.GetContext(
                     tgUser.Id,
                     ct);
@@ -185,6 +183,18 @@ namespace TgBot
             Message msg,
             CancellationToken ct)
         {
+            ArgumentNullException.ThrowIfNull(botClient);
+            ArgumentNullException.ThrowIfNull(context);
+            ArgumentNullException.ThrowIfNull(msg);
+
+            ct.ThrowIfCancellationRequested();
+
+            if (msg.From == null)
+            {
+                throw new InvalidOperationException(
+                    "Не удалось определить пользователя Telegram.");
+            }
+
             var scenario = GetScenario(
                 context.CurrentScenario);
 
@@ -197,7 +207,7 @@ namespace TgBot
             if (result == ScenarioResult.Completed)
             {
                 await _contextRepository.ResetContext(
-                    msg.From!.Id,
+                    msg.From.Id,
                     ct);
 
                 await botClient.SendMessage(
@@ -209,7 +219,7 @@ namespace TgBot
             else
             {
                 await _contextRepository.SetContext(
-                    msg.From!.Id,
+                    msg.From.Id,
                     context,
                     ct);
             }
@@ -241,7 +251,7 @@ namespace TgBot
             return new ReplyKeyboardMarkup(
                 new[]
                 {
-            new KeyboardButton("/cancel")
+                    new KeyboardButton("/cancel")
                 })
             {
                 ResizeKeyboard = true
@@ -253,16 +263,16 @@ namespace TgBot
             return new ReplyKeyboardMarkup(
                 new[]
                 {
-            new KeyboardButton[]
-            {
-                new KeyboardButton("/addtask"),
-                new KeyboardButton("/showtasks")
-            },
-            new KeyboardButton[]
-            {
-                new KeyboardButton("/showalltasks"),
-                new KeyboardButton("/report")
-            }
+                    new KeyboardButton[]
+                    {
+                        new KeyboardButton("/addtask"),
+                        new KeyboardButton("/showtasks")
+                    },
+                    new KeyboardButton[]
+                    {
+                        new KeyboardButton("/showalltasks"),
+                        new KeyboardButton("/report")
+                    }
                 })
             {
                 ResizeKeyboard = true
@@ -461,8 +471,6 @@ namespace TgBot
                 msg,
                 cancellationToken: ct);
         }
-
-        
 
         private async Task CompleteTask(
             ITelegramBotClient bot,

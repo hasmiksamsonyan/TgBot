@@ -29,12 +29,24 @@ namespace TgBot.Scenarios
             Message message,
             CancellationToken ct)
         {
+            ArgumentNullException.ThrowIfNull(bot);
+            ArgumentNullException.ThrowIfNull(context);
+            ArgumentNullException.ThrowIfNull(message);
+
+            ct.ThrowIfCancellationRequested();
+
+            if (message.From == null)
+            {
+                throw new InvalidOperationException(
+                    "Не удалось определить пользователя Telegram.");
+            }
+
             switch (context.CurrentStep)
             {
                 case null:
                     {
                         var user = await _userService.GetUser(
-                            message.From!.Id,
+                            message.From.Id,
                             ct);
 
                         if (user == null)
